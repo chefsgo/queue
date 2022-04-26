@@ -20,7 +20,7 @@ type (
 		Close() error
 
 		Accept(Delegate) error
-		Register(string) error
+		Register(name string) error
 
 		Start() error
 

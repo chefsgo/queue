@@ -5,7 +5,6 @@ import (
 
 	. "github.com/chefsgo/base"
 	"github.com/chefsgo/chef"
-	"github.com/chefsgo/log"
 )
 
 func (this *Instance) newContext() *Context {
@@ -14,9 +13,9 @@ func (this *Instance) newContext() *Context {
 
 // 收到消息
 // 待优化，加入协程池，限制单个队列的并发
-func (this *Instance) Serve(name string, data []byte) {
-	if strings.HasPrefix(name, this.config.Prefix) {
-		name = strings.TrimPrefix(name, this.config.Prefix)
+func (this *Instance) Serve(alias string, data []byte) {
+	if strings.HasPrefix(alias, this.config.Prefix) {
+		alias = strings.TrimPrefix(alias, this.config.Prefix)
 	}
 
 	ctx := this.newContext()
@@ -30,9 +29,14 @@ func (this *Instance) Serve(name string, data []byte) {
 		ctx.Context = chef.NewContext()
 	}
 
-	ctx.Name = name
-	if cfg, ok := this.module.queues[name]; ok {
-		ctx.Config = &cfg
+	//名称和别名
+	ctx.Alias = alias
+	relate := this.module.relateKey(this.name, alias)
+	if name, ok := this.module.relates[relate]; ok {
+		ctx.Name = name
+		if cfg, ok := this.module.queues[ctx.Name]; ok {
+			ctx.Config = &cfg
+		}
 	}
 
 	//开始执行
@@ -95,32 +99,6 @@ func (this *Instance) arguing(ctx *Context) {
 	ctx.Next()
 }
 
-// execute 执行线
-func (this *Instance) execute(ctx *Context) {
-	ctx.clear()
-
-	//execute拦截器
-	ctx.next(this.module.executeFilters...)
-	if ctx.Config.Action != nil {
-		ctx.next(ctx.Config.Action)
-	}
-
-	//开始执行
-	ctx.Next()
-}
-
-// response 响应线
-func (this *Instance) response(ctx *Context) {
-	ctx.clear()
-
-	//response拦截器
-	ctx.next(this.module.responseFilters...)
-	ctx.next(this.body)
-
-	//开始执行
-	ctx.Next()
-}
-
 func (this *Instance) found(ctx *Context) {
 	ctx.clear()
 
@@ -157,6 +135,32 @@ func (this *Instance) denied(ctx *Context) {
 	ctx.Next()
 }
 
+// execute 执行线
+func (this *Instance) execute(ctx *Context) {
+	ctx.clear()
+
+	//execute拦截器
+	ctx.next(this.module.executeFilters...)
+	if ctx.Config.Action != nil {
+		ctx.next(ctx.Config.Action)
+	}
+
+	//开始执行
+	ctx.Next()
+}
+
+// response 响应线
+func (this *Instance) response(ctx *Context) {
+	ctx.clear()
+
+	//response拦截器
+	ctx.next(this.module.responseFilters...)
+	ctx.next(this.body)
+
+	//开始执行
+	ctx.Next()
+}
+
 // 最终的默认body响应
 func (this *Instance) body(ctx *Context) {
 	switch body := ctx.Body.(type) {
@@ -174,7 +178,6 @@ func (this *Instance) bodyRetry(ctx *Context, body retryBody) {
 		if ctx.Retries() < ctx.Config.Retry {
 			meta := ctx.Meta()
 			meta.Retries++
-			log.Info("retry", ctx.Name)
 			ctx.inst.module.publishTo(ctx.inst.name, ctx.Name, meta)
 		}
 	}

@@ -1,6 +1,8 @@
 package queue
 
 import (
+	"fmt"
+
 	. "github.com/chefsgo/base"
 )
 
@@ -8,10 +10,9 @@ type (
 	Queue struct {
 		Name     string   `json:"name"`
 		Text     string   `json:"text"`
-		Alias    []string `json:"-"`
+		Alias    []string `json:"alias"`
 		Nullable bool     `json:"-"`
 		Args     Vars     `json:"args"`
-		Data     Vars     `json:"data"`
 		Setting  Map      `json:"-"`
 		Coding   bool     `json:"-"`
 
@@ -23,10 +24,22 @@ type (
 		// Token bool `json:"token"`
 		// Auth  bool `json:"auth"`
 
-		Assign string `json:"assign"`
-		Retry  int    `json:"retry"`
+		Connect string `json:"connect"`
+		Retry   int    `json:"retry"`
 	}
 
+	// Notice 通知，表示当前节点会发出的队列预告
+	// 比如，支付模块，可能会发布 pay.Finish 之类的一系列的支付完成的队列
+	// 在集群模式下，应该会把节点的notice写入集群节点信息下
+	// 这样方便，生成分布式的文档
+	Notice struct {
+		Name     string `json:"name"`
+		Text     string `json:"text"`
+		Nullable bool   `json:"nullable"`
+		Args     Vars   `json:"args"`
+	}
+
+	// Filter 拦截器
 	Filter struct {
 		Name     string  `json:"name"`
 		Text     string  `json:"text"`
@@ -35,6 +48,7 @@ type (
 		Execute  ctxFunc `json:"-"`
 		Response ctxFunc `json:"-"`
 	}
+	// Handler 处理器
 	Handler struct {
 		Name   string  `json:"name"`
 		Text   string  `json:"text"`
@@ -46,37 +60,27 @@ type (
 )
 
 func (module *Module) Queue(name string, config Queue, override bool) {
-
-	// if config.Method == "" {
-	// 	config.Method = name
-	// }
-
-	// //需要代注册方法
-	// if config.Action != nil {
-	// 	method := Method{"", 0, 0, config.Name, config.Desc, config.Alias, config.Nullable, config.Args, config.Data, config.Setting, config.Coding, config.Action, config.Token, config.Auth}
-	// 	mEngine.Method(config.Method, method, overrides...)
-	// }
-
-	alias := make([]string, 0)
-	if name != "" {
-		alias = append(alias, name)
-	}
-	if config.Alias != nil {
-		alias = append(alias, config.Alias...)
+	if config.Alias == nil || len(config.Alias) == 0 {
+		config.Alias = []string{name}
 	}
 
-	for _, key := range alias {
-		if override {
-			module.queues[key] = config
-		} else {
-			if _, ok := module.queues[key]; ok == false {
-				module.queues[key] = config
-			}
-		}
+	if _, ok := module.queues[name]; ok {
+		panic(fmt.Sprintf("Queue %s already registered.", name))
+	} else {
+		module.queues[name] = config
 	}
 }
 
-// Filter 拦截器
+// Notice 注册 通知
+func (module *Module) Notice(name string, config Notice, override bool) {
+	if _, ok := module.notices[name]; ok {
+		panic(fmt.Sprintf("Notice %s already registered.", name))
+	} else {
+		module.notices[name] = config
+	}
+}
+
+// Filter 注册 拦截器
 func (module *Module) Filter(name string, config Filter, override bool) {
 	if override {
 		module.filters[name] = config
@@ -87,7 +91,7 @@ func (module *Module) Filter(name string, config Filter, override bool) {
 	}
 }
 
-// Handler 处理器
+// Handler 注册 处理器
 func (module *Module) Handler(name string, config Handler, override bool) {
 	if override {
 		module.handlers[name] = config

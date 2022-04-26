@@ -12,6 +12,8 @@ func (this *Module) Register(name string, value Any, override bool) {
 		this.Driver(name, config, override)
 	case Queue:
 		this.Queue(name, config, override)
+	case Notice:
+		this.Notice(name, config, override)
 	case Filter:
 		this.Filter(name, config, override)
 	case Handler:
@@ -191,9 +193,15 @@ func (this *Module) Connect() {
 
 		//注册队列
 		for msgName, msgConfig := range this.queues {
-			if msgConfig.Assign == "" || msgConfig.Assign == "*" || msgConfig.Assign == name {
-				if err := connect.Register(msgName); err != nil {
-					panic("Failed to register queue: " + err.Error())
+			if msgConfig.Connect == "" || msgConfig.Connect == "*" || msgConfig.Connect == name {
+				for _, alias := range msgConfig.Alias {
+					// 注册队列
+					if err := connect.Register(alias); err != nil {
+						panic("Failed to register queue: " + err.Error())
+					}
+					// 记录关联 conn-alias -> queue
+					relate := this.relateKey(name, alias)
+					this.relates[relate] = msgName
 				}
 			}
 		}

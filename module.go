@@ -1,6 +1,7 @@
 package queue
 
 import (
+	"fmt"
 	"sync"
 
 	. "github.com/chefsgo/base"
@@ -19,8 +20,11 @@ var (
 		instances: make(map[string]Instance, 0),
 
 		queues:   make(map[string]Queue, 0),
+		notices:  make(map[string]Notice, 0),
 		filters:  make(map[string]Filter, 0),
 		handlers: make(map[string]Handler, 0),
+
+		relates: make(map[string]string, 0),
 	}
 )
 
@@ -34,8 +38,11 @@ type (
 		drivers map[string]Driver
 
 		queues   map[string]Queue
+		notices  map[string]Notice
 		filters  map[string]Filter
 		handlers map[string]Handler
+
+		relates map[string]string
 
 		serveFilters    []ctxFunc
 		requestFilters  []ctxFunc
@@ -84,6 +91,10 @@ func (this *Module) publishTo(connect, name string, meta chef.Meta) error {
 	}
 
 	return errInvalidConnection
+}
+
+func (this *Module) relateKey(conn, alias string) string {
+	return fmt.Sprintf("%s-%s")
 }
 
 func (this *Module) publish(name string, meta chef.Meta) error {
