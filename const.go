@@ -3,7 +3,7 @@ package queue
 import "errors"
 
 const (
-	NAME = "queue"
+	NAME = "QUEUE"
 )
 
 var (
