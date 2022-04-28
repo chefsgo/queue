@@ -24,6 +24,12 @@ type (
 		// Token bool `json:"token"`
 		// Auth  bool `json:"auth"`
 
+		// 路由单独可定义的处理器
+		Found  ctxFunc `json:"-"`
+		Error  ctxFunc `json:"-"`
+		Failed ctxFunc `json:"-"`
+		Denied ctxFunc `json:"-"`
+
 		Connect string `json:"connect"`
 		Retry   int    `json:"retry"`
 	}
