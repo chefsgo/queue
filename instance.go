@@ -35,6 +35,8 @@ func (this *Instance) Serve(alias string, data []byte) {
 	this.request(ctx)
 	// response 是最后的反馈，是必须执行的
 	this.response(ctx)
+
+	chef.CloseMeta(&ctx.Meta)
 }
 
 // request 请求处理
@@ -176,7 +178,7 @@ func (this *Instance) bodyRetry(ctx *Context, body retryBody) {
 		if ctx.Retries() < ctx.Config.Retry {
 			meta := ctx.Metadata()
 			meta.Retries++
-			ctx.inst.module.publishTo(ctx.inst.name, ctx.Name, meta)
+			ctx.inst.module.enqueueTo(ctx.inst.name, ctx.Name, meta)
 		}
 	}
 }

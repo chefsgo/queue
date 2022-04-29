@@ -74,8 +74,8 @@ type (
 	}
 )
 
-// Publish 发起消息
-func (this *Module) publishTo(connect, name string, meta chef.Metadata) error {
+// Enqueue 消息入队
+func (this *Module) enqueueTo(connect, name string, meta chef.Metadata) error {
 	locate := module.hashring.Locate(name)
 
 	if inst, ok := module.instances[locate]; ok {
@@ -100,7 +100,7 @@ func (this *Module) publishTo(connect, name string, meta chef.Metadata) error {
 		}
 
 		name := inst.config.Prefix + name
-		return inst.connect.Publish(name, bytes)
+		return inst.connect.Enqueue(name, bytes)
 	}
 
 	return errInvalidConnection
@@ -110,7 +110,7 @@ func (this *Module) relateKey(conn, alias string) string {
 	return fmt.Sprintf("%s-%s")
 }
 
-func (this *Module) publish(name string, meta chef.Metadata) error {
+func (this *Module) enqueue(name string, meta chef.Metadata) error {
 	locate := module.hashring.Locate(name)
-	return this.publishTo(locate, name, meta)
+	return this.enqueueTo(locate, name, meta)
 }

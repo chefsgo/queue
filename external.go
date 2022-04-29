@@ -5,6 +5,6 @@ import (
 )
 
 // Publish
-func Publish(name string, values ...Map) error {
-	return module.Publish(name, values...)
+func Enqueue(name string, values ...Map) error {
+	return module.Enqueue(name, values...)
 }

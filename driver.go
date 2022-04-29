@@ -24,7 +24,7 @@ type (
 
 		Start() error
 
-		Publish(name string, data []byte) error
+		Enqueue(name string, data []byte) error
 	}
 )
 

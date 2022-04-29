@@ -8,7 +8,7 @@ import (
 // . "github.com/chefsgo/base"
 
 // Publish 发起消息
-func (this *Module) Publish(name string, values ...Map) error {
+func (this *Module) Enqueue(name string, values ...Map) error {
 	//原数据
 	var payload Map
 	if len(values) > 0 {
@@ -16,5 +16,5 @@ func (this *Module) Publish(name string, values ...Map) error {
 	}
 	meta := chef.Metadata{Name: name, Payload: payload}
 
-	return this.publish(name, meta)
+	return this.enqueue(name, meta)
 }
