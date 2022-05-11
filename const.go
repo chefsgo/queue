@@ -4,7 +4,6 @@ import "errors"
 
 const (
 	NAME = "QUEUE"
-	//
 )
 
 var (
