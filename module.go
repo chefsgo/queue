@@ -1,7 +1,6 @@
 package queue
 
 import (
-	"fmt"
 	"sync"
 
 	. "github.com/chefsgo/base"
@@ -59,7 +58,8 @@ type (
 		hashring *util.HashRing
 	}
 
-	Config struct {
+	Configs map[string]Config
+	Config  struct {
 		Driver  string
 		Codec   string
 		Weight  int
@@ -74,43 +74,42 @@ type (
 	}
 )
 
-// Enqueue 消息入队
-func (this *Module) enqueueTo(connect, name string, meta chef.Metadata) error {
-	locate := module.hashring.Locate(name)
+// Driver 注册驱动
+func (module *Module) Driver(name string, driver Driver, override bool) {
+	module.mutex.Lock()
+	defer module.mutex.Unlock()
 
-	if inst, ok := module.instances[locate]; ok {
-
-		// 看看是不是有 notice 定义，如果有，并有args定义，要处理参数包装
-		if meta.Payload != nil {
-			if notice, ok := this.notices[name]; ok {
-				if notice.Args != nil {
-					value := Map{}
-					res := chef.Mapping(notice.Args, meta.Payload, value, notice.Nullable, false)
-					if res == nil || res.OK() {
-						meta.Payload = value
-					}
-				}
-			}
-		}
-
-		//原数据
-		bytes, err := chef.Marshal(inst.config.Codec, &meta)
-		if err != nil {
-			return err
-		}
-
-		name := inst.config.Prefix + name
-		return inst.connect.Enqueue(name, bytes)
+	if driver == nil {
+		panic("Invalid queue driver: " + name)
 	}
 
-	return errInvalidConnection
+	if override {
+		module.drivers[name] = driver
+	} else {
+		if module.drivers[name] == nil {
+			module.drivers[name] = driver
+		}
+	}
 }
 
-func (this *Module) relateKey(conn, alias string) string {
-	return fmt.Sprintf("%s-%s")
-}
+func (this *Module) Config(name string, config Config, override bool) {
+	this.mutex.Lock()
+	defer this.mutex.Unlock()
 
-func (this *Module) enqueue(name string, meta chef.Metadata) error {
-	locate := module.hashring.Locate(name)
-	return this.enqueueTo(locate, name, meta)
+	if name == "" {
+		name = chef.DEFAULT
+	}
+
+	if override {
+		this.configs[name] = config
+	} else {
+		if _, ok := this.configs[name]; ok == false {
+			this.configs[name] = config
+		}
+	}
+}
+func (this *Module) Configs(config Configs, override bool) {
+	for key, val := range config {
+		this.Config(key, val, override)
+	}
 }
