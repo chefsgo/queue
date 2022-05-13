@@ -9,7 +9,7 @@ import (
 )
 
 func init() {
-	chef.Register(NAME, module)
+	chef.Register(module)
 }
 
 var (
