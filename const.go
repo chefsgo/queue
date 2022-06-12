@@ -7,5 +7,6 @@ const (
 )
 
 var (
+	//
 	errInvalidConnection = errors.New("Invalid queue connection.")
 )
